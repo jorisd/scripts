@@ -1,4 +1,4 @@
 #!/usr/bin/perl
 
-print "test"
+print "test2"
 
