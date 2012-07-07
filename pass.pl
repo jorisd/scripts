@@ -15,8 +15,21 @@ use File::Tail;
 #use IO::Handle; # pour Parse::Syslog, mais plus utile grace a File::Tail
 use SNMP::Extension::PassPersist;
 
+use threads;
+use threads::shared;
 
 my $count = 0;
+
+my @monitoring_strings = ( "web1", "web2", );
+my $root_oid = ".1.3.6.1.4.1.8072.2222.";
+
+my %oid_tree;
+
+foreach (0..@#monitoring_strings) {
+        my $key = $root_oid . $_;
+        %oid_tree{"$root_oid$key"} => [ "integer", 0 ]
+}
+
 
 my %monitoring = (
                    'web1' => ".1.3.6.1.4.1.8072.2222.0" ,
