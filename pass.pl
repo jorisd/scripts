@@ -3,7 +3,10 @@
 #
 # TODO: Si le syslog grossi, le scan du fichier prendra un moment :
 #       possibilité de faire un seek dans le fichier de syslog ??
-#       Ou d'utiliser passpersist
+#       Ou d'utiliser passpersist avec un file::tail
+
+BEGIN { push @INC,'/home/joris/perl5/lib/perl5'; }
+
 
 use warnings;
 use strict;
@@ -12,48 +15,58 @@ use POSIX;
 use DateTime;
 use Parse::Syslog;
 use File::Tail;
-#use IO::Handle; # pour Parse::Syslog, mais plus utile grace a File::Tail
 use SNMP::Extension::PassPersist;
 
 use threads;
 use threads::shared;
+use Thread::Queue;
 
-my $count = 0;
+my $syslogfile = "/tmp/zzz";
 
-my @monitoring_strings = ( "web1", "web2", );
-my $root_oid = ".1.3.6.1.4.1.8072.2222.";
+my $root_oid = ".1.3.6.1.4.1.8072.2222";
 
-my %oid_tree;
-
-foreach (0..@#monitoring_strings) {
-        my $key = $root_oid . $_;
-        %oid_tree{"$root_oid$key"} => [ "integer", 0 ]
-}
+# permet une commmunication entre le thread de lecture et celui de calcul
+my $DataQueue = Thread::Queue->new();
 
 
-my %monitoring = (
-                   'web1' => ".1.3.6.1.4.1.8072.2222.0" ,
-                   'web2' => ".1.3.6.1.4.1.8072.2222.1",
+# liste des hosts à monitorer avec leur OID
+my %monitoring :shared = (
+                   web1 => "${root_oid}.0",
+                   web2 => "${root_oid}.1",
                  );
 
-my %oid_tree = (
-                 $monitoring{'web1'}    => [ "integer", 0 ],
-                 $monitoring{'web2'}    => [ "integer", 0 ],
+# l'arbre d'OID utilisé pour setter les mesures
+# Attention, ça doit correspondre avec le hash %monitoring
+# J'ai pas encore trouvé le moyen de réunir ces 2 hashes ensemble
+my %oid_tree :shared = (
+                 $monitoring{web1}    => [ "integer", 0 ],
+                 $monitoring{web2}    => [ "integer", 0 ],
                );
-    
+
+my $calc_thrd = threads->new(\&calcsub);
+my $read_thrd = threads->new(\&readsub, "/tmp/zzz");
+$read_thrd->detach();   # le thread de lecture devient autonome.
+                        # "When the program exits, any detached threads that are
+                        # still running are silently terminated."
+$calc_thrd->detach();
+
 my $extsnmp = SNMP::Extension::PassPersist->new(
     backend_collect => \&update_tree,
-    refresh         => 30,      # refresh every 30 sec
-);  
-    
+    idle_count      => 20,  # quit after 120s    
+    refresh         => 6,   # refresh every 6 sec
+);
+
 $extsnmp->run;
 
 
 sub update_tree {
     my ($self) = @_;
 
-    $oid_tree{".1.3.6.1.4.1.8072.0"}[1] = $count++ ;
-    $oid_tree{".1.3.6.1.4.1.8072.1"}[1] = $count++ ;
+    #$oid_tree{ $monitoring{'web1'}  }[1] = $count++ ;
+    #$oid_tree{".1.3.6.1.4.1.8072.1"}[1] = $count++ ;
+
+
+
 
     # add a serie of OID entries
     #$self->add_oid_entry($oid, $type, $value);
@@ -62,56 +75,62 @@ sub update_tree {
     $self->add_oid_tree(\%oid_tree);
 }
 
+# cette sub sera le corps du thread de lecture
+# y'a juste un check mineur pour eviter de passer des conneries au thread
+# de calcul
+sub readsub {
+        my ($filename) = @_;
 
+        my $file = File::Tail->new(
+             name => $filename,
+             maxbuf => 2048,
+             maxinterval => 30,
+             interval => 1,
+             noblock => 0,
+        );
 
+        my $parser = Parse::Syslog->new($file);
 
-
-# -----------------
-my $syslogfile = "/var/log/monitoring";
-my $remotesrv = $ARGV[0];
-my $lastlogline = undef;
-
-$file=File::Tail->new($syslogfile);
-
-my $parser = Parse::Syslog->new($file);
-
-# desactivation temporaire des warnings
-$SIG{__WARN__} = sub { 1 };
-while (my $sl = $parser->next) {
-        $lastlogline = $sl->{text} if($sl->{host} eq "$remotesrv" && $sl->{program} eq "monitoring");
-}
-
-# reactivation des warnings
-$SIG{__WARN__} = 'DEFAULT';
-
-#print "$lastlogline";
-
-$io->close();
-undef $io;
-close $fd;
-
-
-if(isdigit $lastlogline) {
-        my $localtime = time;
-        my $dt = DateTime->from_epoch( epoch => $lastlogline, time_zone => "UTC" );
-
-        my $diff = abs( $localtime - $lastlogline );
-
-        print "Last syslog msg from $remotesrv received @ " . $dt->hms . " UTC ($diff" . "s ago)";
-
-        # On accepte un écart de +/- 120secs
-        if($diff > 120) {
-                print " Delta TOO BIG !!!\n";
-                exit 255;
+        # desactivation temporaire des warnings
+        $SIG{__WARN__} = sub { 1 };
+        while (my $sl = $parser->next) {
+                if($sl->{program} eq "monitoring") { # check mineur
+                        $DataQueue->enqueue("$sl->{host}:$sl->{text}");
+                }
         }
-        else {
-                print " OK\n";
-                exit 0;
-        }
-}
-else {
-        print "No syslog msg from $remotesrv received. ERROR !!!\n";
-        exit 255;
+        # reactivation des warnings
+        $SIG{__WARN__} = 'DEFAULT';
 }
 
- 
+sub calcsub {
+        my ($host, $timestamp) = split(/:/, $DataQueue->dequeue()); 
+
+        if(exists($monitoring{$host})) {
+                if(isdigit $timestamp) {
+                        my $localtime = time;
+                        my $dt = DateTime->from_epoch( epoch => $timestamp, time_zone => "UTC" );
+
+                        my $diff = abs( $localtime - $timestamp );
+
+                        #print "Last syslog msg from $remotesrv received @ " . $dt->hms . " UTC ($diff" . "s ago)";
+
+                        # On accepte un écart de +/- 120secs
+                        if($diff > 120) {
+                        #        print " Delta TOO BIG !!!\n";
+                        
+                                $oid_tree{ $monitoring{ $host } }[1] = 255;
+                            #exit 255;
+                        }
+                        else {
+                        #        print " OK\n";
+                        #        exit 0;
+                                $oid_tree{ $monitoring{ $host } }[1] = 0; 
+                        }
+                }
+                else {
+                        #print "No syslog msg from $remotesrv received. ERROR !!!\n";
+                        #exit 255;
+                        $oid_tree{ $monitoring{ $host } }[1] = 254;
+                }
+        }
+}
