@@ -18,7 +18,6 @@ use File::Tail;
 use SNMP::Extension::PassPersist;
 
 use threads;
-use threads::shared;
 use Thread::Queue;
 
 my $syslogfile = "/tmp/zzz";
@@ -30,7 +29,7 @@ my $DataQueue = Thread::Queue->new();
 
 
 # liste des hosts à monitorer avec leur OID
-my %monitoring :shared = (
+my %monitoring = (
                    web1 => "${root_oid}.0",
                    web2 => "${root_oid}.1",
                  );
@@ -43,12 +42,10 @@ my %oid_tree = (
                  $monitoring{web2}    => [ "integer", 0 ],
                );
 
-#my $calc_thrd = threads->new(\&calcsub);
-my $read_thrd = threads->new(\&readsub, "/tmp/zzz");
+my $read_thrd = threads->new(\&readsub, $syslogfile);
 $read_thrd->detach();   # le thread de lecture devient autonome.
                         # "When the program exits, any detached threads that are
                         # still running are silently terminated."
-#$calc_thrd->detach();
 
 my $extsnmp = SNMP::Extension::PassPersist->new(
     backend_collect => \&update_tree,
@@ -62,16 +59,9 @@ $extsnmp->run;
 sub update_tree {
     my ($self) = @_;
 
-    #$oid_tree{ $monitoring{'web1'}  }[1] = $count++ ;
-    #$oid_tree{".1.3.6.1.4.1.8072.1"}[1] = $count++ ;
-
     &calcsub;
 
-
-    # add a serie of OID entries
-    #$self->add_oid_entry($oid, $type, $value);
-    #$self->add_oid_entry(".1.3.6.1.4.1.32272.20", "counter", $count);
-    # or directly add a whole OID tree
+    # directly add a whole OID tree
     $self->add_oid_tree(\%oid_tree);
 }
 
@@ -103,8 +93,6 @@ sub readsub {
 }
 
 sub calcsub {
-        #print Dumper($oid_tree{ $monitoring{ web1 } }[1]);
-        
         my $msg = $DataQueue->dequeue_nb();
         
         if(defined $msg) {        
