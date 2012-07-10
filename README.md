@@ -1,4 +1,4 @@
-cripts (jorisd)
+Scripts (jorisd)
 =======
 
 Pass*pl
