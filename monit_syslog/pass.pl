@@ -30,18 +30,6 @@
 #   S'agissant d'un script de monitoring, il faut l'interfacer avec snmp
 #   en mode pass_persist.
 #
-#   La plupart des paramètres sont dans un fichier .ini de ce type :
-#
-#   [root]  # oid_racine, doit correspondre avec la config snmp
-#   oid=.1.3.6.1.4.1.2021.2222
-#   [hosts] # hostname=oid_feuille
-#   serveur-front-web1=.0
-#   serveur-front-web2=.1
-#   [syslog]
-#   file=/var/log/monitoring.log
-#   program=monitoring-string
-#
-#
 #   Auteur : Joris <jorisd_AT_gmail.com>
 
 BEGIN { push @INC,'/home/joris/perl5/lib/perl5'; }
