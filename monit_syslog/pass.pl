@@ -76,7 +76,7 @@ my $full_oid;
 
 foreach my $host (sort(keys %{$cfg{hosts}})) {
     $full_oid = "$cfg{root}{oid}" . "$cfg{hosts}{$host}";
-    $oid_tree{$full_oid} = [ "integer", 254 ]; # initialisation des oid en mode erreur int/255.
+    $oid_tree{$full_oid} = [ "integer", 254 ]; # initialisation des oid
 }
 
 
