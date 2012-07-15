@@ -102,7 +102,7 @@ else {
 }
 
 if($maxconns > 0) {
-  $seuil=int(($threads/$maxconns)*100);
+  $pct=int(($threads/$maxconns)*100);
 }
 else {
   $erreur++;
@@ -115,7 +115,7 @@ exit 100 if $erreur;
 
 print "Threads_connected: $threads\n";
 print "max_connections: $maxconns\n";
-print "Seuil de connections : $seuil %\n";
-exit $seuil;
+print "% de connections : $pct %\n";
+exit $pct;
 
 
