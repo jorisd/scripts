@@ -1,10 +1,15 @@
 #!/usr/bin/perl
 #
 # petit exercice qu'on m'a demandé
-# de faire.
+# de faire :
+# - dumper les symboles d'une lib (mode débug evidemment)
+# - récupérer les symboles type "T"
+# - enregistrer le nom de la function et le fichier de lib
+# - trier et afficher les symboles avec le fichiers associé
+#
 #
 # je suis persuadé qu'on peut ffaire plus court... des idées ?
-# blocs BEGIN / END a mettre à contribution
+# blocs BEGIN / END a mettre à contribution si uniligne ?
 
 use strict;
 use warnings;
@@ -18,7 +23,7 @@ my %h;
 foreach my $file (@ARGV) {
   open SYMBOL, "/usr/bin/nm $file |";
   while (<SYMBOL>) {
-    $h{$2} = $file if (m/^(\w+) T (.+)$/);
+    $h{$1} = $file if (m/^\w+ T (.+)$/);
   }
   close SYMBOL;
 }
