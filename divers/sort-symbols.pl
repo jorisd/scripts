@@ -15,20 +15,20 @@ use strict;
 use warnings;
 use v5.10;
 
-die "Usage: $0 /path/to/debug-lib ... " if $#ARGV < 1;
+die "Usage: $0 /path/to/debug-lib ... " if ($#ARGV < 0)  ;
 
 # contiendra mes symboles type "T"
 my %h;
 
-foreach my $file (@ARGV) {
-  open SYMBOL, "/usr/bin/nm $file |";
+foreach (@ARGV) {
+  open SYMBOL, "/usr/bin/nm $_ |";
   while (<SYMBOL>) {
-    $h{$1} = $file if (m/^\w+ T (.+)$/);
+    $h{$1} = $_ if (/^\w+ T (.+)$/);
   }
   close SYMBOL;
 }
 
-foreach my $text (sort keys %h) {
-  say "$text => $h{$text}";
+foreach (sort keys %h) {
+  say "$_ => $h{$_}";
 }
 
