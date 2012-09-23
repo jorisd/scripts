@@ -12,9 +12,26 @@ use DateTime;
 
 sub connect_db {
   my $dbh = DBI->connect("dbi:SQLite:dbname=./db.sqlite3") or die DBI::errstr;
-  return $dbh;
-  
+  return $dbh;  
 }
+
+my $x = 0;
+
+open(MONDEBUG, ">>/tmp/debug.log");
+
+sub gen_data {
+  $x = $x + 1;
+  
+  my $y = sin($x) * 1000;
+  $y = int(abs($y));
+  
+  say MONDEBUG "x = $x, y = $y";
+  
+  { jour  => $x,
+    duree => $y,
+  }
+}
+
 
 set serializer => 'JSON';
 
@@ -31,12 +48,15 @@ get '/data/:testid' => sub {
   
 #  return $data;
   
-  my $unixepoch = time ;
+#  my $unixepoch = time ;
 
   header('Access-Control-Allow-Origin', '*');
-  { jour  => $unixepoch,
-    duree => 1,
-  }
+  
+  gen_data();
+  
+  #{ jour  => $unixepoch,
+  #  duree => 1,
+  #}
   
   #  time   => 'zero',
   #  list   => [qw(1 2 3 4)],
