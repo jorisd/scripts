@@ -1,0 +1,42 @@
+#!/usr/bin/perl
+#
+# combine les programmes unix head et grep
+#
+# exemple : c'est utile de faire un ps axuw | grep toto
+#           mais en faisant ça on pert la signification 
+#           des colonnes
+#
+
+use strict;
+use warnings;
+use Getopt::Long qw(:config bundling);
+
+my $n = 10; # pour head -n
+my $v = 0;  # pour grep -v
+my $i = ''; # pour grep -i
+
+my $result = GetOptions("n=i" => \$n,
+                        "v"   => \$v,
+                        "i"   => \$i, );
+
+my $s = shift @ARGV;
+my $regex = qr/$s/;
+
+
+
+
+while(<>) {
+  print;
+  last if $n--;
+}
+
+while(<>)
+{
+  if($v) {
+    print grep { ! /$regex/ } $_ ;
+  }
+  else {
+    print grep { /$regex/ } $_ ;
+  }
+}
+
