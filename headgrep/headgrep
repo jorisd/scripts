@@ -27,7 +27,7 @@ my $regex = qr/$s/;
 
 while(<>) {
   print;
-  last if $n--;
+  last unless $n--;
 }
 
 while(<>)
