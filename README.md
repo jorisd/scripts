@@ -18,3 +18,7 @@ mysql-thread_count/
 Monitore un serveur MySQL sur le nombre de connexions actives.
 Permet donc d'alerter si on approche dangereusement du max_connections
 
+headgrep/
+-
+
+Combine un head puis un grep.
