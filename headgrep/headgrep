@@ -20,23 +20,16 @@ my $result = GetOptions("n=i" => \$n,
                         "i"   => \$i, );
 
 my $s = shift @ARGV;
-my $regex = qr/$s/;
-
-
-
 
 while(<>) {
   print;
   last unless --$n;
 }
 
-while(<>)
-{
-  if($v) {
-    print grep { ! /$regex/ } $_ ;
-  }
-  else {
-    print grep { /$regex/ } $_ ;
-  }
+if($v) {
+  print grep { ! /$s/ } $_ while(<>) ;
+}
+else {
+  print grep { /$s/ } $_ while(<>) ;
 }
 
