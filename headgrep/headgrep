@@ -26,10 +26,4 @@ while(<>) {
   last unless --$n;
 }
 
-if($v) {
-  print grep { ! /$s/ } $_ while(<>) ;
-}
-else {
-  print grep { /$s/ } $_ while(<>) ;
-}
-
+print grep { /$s/ xor $v } $_ while(<>) ;
