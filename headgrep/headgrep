@@ -3,7 +3,7 @@
 # combine les programmes unix head et grep
 #
 # exemple : c'est utile de faire un ps axuw | grep toto
-#           mais en faisant ça on pert la signification 
+#           mais en faisant ça on perd la signification 
 #           des colonnes
 #
 
@@ -12,8 +12,8 @@ use warnings;
 use Getopt::Long qw(:config bundling);
 
 my $n = 10; # pour head -n
-my $v = 0;  # pour grep -v
-my $i = ''; # pour grep -i
+my $v =  0; # pour grep -v
+my $i =  0; # pour grep -i
 
 my $result = GetOptions("n=i" => \$n,
                         "v"   => \$v,
@@ -26,4 +26,7 @@ while(<>) {
   last unless --$n;
 }
 
-print grep { /$s/ xor $v } $_ while(<>) ;
+my $re = $i ? qr/$s/i : qr/$s/;
+
+print grep { /$re/ xor $v } $_ while(<>);
+
