@@ -4,19 +4,17 @@ package Diabolo;
 
 =head1 NAME
 
-Diabolo - My author was too lazy to write an abstract
+Diabolo - Fournit des fonction pour exploiter les elements basiques : vm, host, 
 
 =head1 SYNOPSIS
 
-  my $object = Diabolo->new(
-      env  => 'test',
-  );
+  my $object = Diabolo->new("test");
   
   $object->lshosts;
 
 =head1 DESCRIPTION
 
-The author was too lazy to write a description.
+En cours de dev
 
 =head1 METHODS
 
@@ -35,9 +33,7 @@ our $VERSION = '0.01';
 
 =head2 new
 
-  my $object = Diabolo->new(
-      foo => 'bar',
-  );
+  my $object = Diabolo->new("test");
 
 The C<new> constructor lets you create a new B<Diabolo> object.
 
@@ -48,16 +44,18 @@ Returns a new B<Diabolo> or dies on error.
 =cut
 
 sub new {
-	my ($class,$env) = @_;
-	my $this = {};
-	bless($this, $class);
-	$this->{ENV} = $env;
+    my ( $class, $env ) = @_;
+    my $this = {};
+    bless( $this, $class );
+    $this->{ENV} = $env;
 
-  if($env eq 'test') {
-    $this->{dbh} = DBI->connect("dbi:SQLite:dbname=db-$env.sqlite", "", "") or die $DBI::errstr;
-  }	
-	
-	return $this;
+    if ( $env eq 'test' ) {
+        $this->{dbh} =
+          DBI->connect( "dbi:SQLite:dbname=db-$env.sqlite", "", "" )
+          or die $DBI::errstr;
+    }
+
+    return $this;
 }
 
 =pod
@@ -69,21 +67,21 @@ Affiche les hosts de l'environnement dans lequel nous nous trouvons
 =cut
 
 sub lshosts {
-	my $self = shift;
+    my $self = shift;
 
-  my $sql = "select * from host";
-  
-  my $dbh = $self->{dbh};
-  my $sth = $dbh->prepare($sql);
-  $sth->execute();
+    my $sql = "select * from host";
 
-  while (my $row = $sth->fetchrow_hashref) {
-    say "Host:";
-    for my $col (keys %$row) {
-        say "\t$col is $row->{$col}";
+    my $dbh = $self->{dbh};
+    my $sth = $dbh->prepare($sql);
+    $sth->execute();
+
+    while ( my $row = $sth->fetchrow_hashref ) {
+        say "Host:";
+        for my $col ( keys %$row ) {
+            say "\t$col is $row->{$col}";
+        }
     }
-  }
-  
+
 }
 
 =pod
@@ -95,22 +93,21 @@ Affiche les vms de l'environnement dans lequel nous nous trouvons
 =cut
 
 sub lsvms {
-	my $self = shift;
+    my $self = shift;
 
-  my $sql = "select * from vm";
-  
-  my $dbh = $self->{dbh};
-  my $sth = $dbh->prepare($sql);
-  $sth->execute();
-  
-  while (my $row = $sth->fetchrow_hashref) {
-    say "vm:";
-    for my $col (keys %$row) {
-        say "\t$col is $row->{$col}";
+    my $sql = "select * from vm";
+
+    my $dbh = $self->{dbh};
+    my $sth = $dbh->prepare($sql);
+    $sth->execute();
+
+    while ( my $row = $sth->fetchrow_hashref ) {
+        say "vm:";
+        for my $col ( keys %$row ) {
+            say "\t$col is $row->{$col}";
+        }
     }
-  }
-  
-  
+
 }
 
 =pod
@@ -122,13 +119,13 @@ Remet à zéro les données dans la base de donnnées
 =cut
 
 sub resetenv {
-	my $self = shift;
+    my $self = shift;
 
-  my $sql = "delete from host_pairs; delete from vm; delete from host;";
-  
-  my $dbh = $self->{dbh};
-  my $sth = $dbh->prepare($sql);
-  $sth->execute();
+    my $sql = "delete from host_pairs; delete from vm; delete from host;";
+
+    my $dbh = $self->{dbh};
+    my $sth = $dbh->prepare($sql);
+    $sth->execute();
 }
 
 =pod
@@ -140,20 +137,19 @@ Ajoute un nouvel host
 =cut
 
 sub addhost {
-	my $self = shift;
+    my $self = shift;
 
-  my $params = { @_ };
-  
-  print Dumper($params);
-  
-  my $sql = "insert into host (ip, ram, disk, name, dc, active)
+    my $params = {@_};
+
+    print Dumper($params);
+
+    my $sql = "insert into host (ip, ram, disk, name, dc, active)
              VALUES ($params->{ip}, $params->{ram}, $params->{disk}, $params->{name}, $params->{dc}, $params->{active})";
-  
-  my $dbh = $self->{dbh};
-  my $sth = $dbh->prepare($sql);
-  $sth->execute();
-}
 
+    my $dbh = $self->{dbh};
+    my $sth = $dbh->prepare($sql);
+    $sth->execute();
+}
 
 =pod
 
@@ -164,18 +160,18 @@ Ajoute une nouvelle Vm
 =cut
 
 sub addvm {
-	my $self = shift;
+    my $self = shift;
 
-  my $params = { @_ };
-  
-  my $sql = "insert into vm (ip, ip_service, ram, disk, name, dc, active)
+    my $params = {@_};
+
+    my $sql = "insert into vm (ip, ip_service, ram, disk, name, dc, active)
              values ($params->{ip}, $params->{ip_service}, $params->{ram},
                      $params->{disk}, $params->{name}, $params->{dc},
                      $params->{active})";
-  
-  my $dbh = $self->{dbh};
-  my $sth = $dbh->prepare($sql);
-  $sth->execute();
+
+    my $dbh = $self->{dbh};
+    my $sth = $dbh->prepare($sql);
+    $sth->execute();
 }
 
 =pod
@@ -187,16 +183,16 @@ Associe deux hosts ensemble pour former après un couple master/slave.
 =cut
 
 sub pairhosts {
-	my $self = shift;
+    my $self = shift;
 
-  my $params = { @_ };
-  
-  my $sql = "insert into hosts_pair (host_id1, host_id2)
+    my $params = {@_};
+
+    my $sql = "insert into hosts_pair (host_id1, host_id2)
              values ($params->{id1}, $params->{id2})";
-  
-  my $dbh = $self->{dbh};
-  my $sth = $dbh->prepare($sql);
-  $sth->execute();
+
+    my $dbh = $self->{dbh};
+    my $sth = $dbh->prepare($sql);
+    $sth->execute();
 }
 
 =pod
@@ -208,25 +204,21 @@ Affiche une configuration utilisable par nagios
 =cut
 
 sub nagios_config {
-	my $self = shift;
-  
-  my $sql = "select * from vm where active = 1";
-  
-  my $dbh = $self->{dbh};
-  my $sth = $dbh->prepare($sql);
-  $sth->execute();
-  
-  
-  #my ($vm_id, $ip, $ip_service, $ram, $disk, $name, $dc, $active) = $sth->fetchrow();
-  while (my $row = $sth->fetchrow_hashref) {
-    for my $col (keys %$row) {
-        print "\t$col is $row->{$col}\n";
+    my $self = shift;
+
+    my $sql = "select * from vm where active = 1";
+
+    my $dbh = $self->{dbh};
+    my $sth = $dbh->prepare($sql);
+    $sth->execute();
+
+#my ($vm_id, $ip, $ip_service, $ram, $disk, $name, $dc, $active) = $sth->fetchrow();
+    while ( my $row = $sth->fetchrow_hashref ) {
+        for my $col ( keys %$row ) {
+            print "\t$col is $row->{$col}\n";
+        }
     }
-  }
 }
-
-
-
 
 1;
 
