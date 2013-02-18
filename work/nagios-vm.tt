@@ -1,0 +1,9 @@
+[% FOREACH vm_id = vm.keys.sort; %]
+define host{
+        use                     vm-generic
+        host_name               [% vm.$vm_id.name %]
+        alias                   DC[% vm.$vm_id.dc %] [% vm.$vm_id.name %]
+        contact_groups          contact-diabolo, contact-sextant
+        address                 [% vm.$vm_id.ip_service %]
+}
+[% END %]

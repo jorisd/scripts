@@ -1,0 +1,10 @@
+[% FOREACH host_id = host.keys.sort; %]
+define host{
+        use                     host-generic
+        host_name               [% host.$host_id.name %]
+        alias                   DC[% host.$host_id.dc %] [% host.$host_id.name %]
+        contact_groups          contact-diabolo, contact-sextant
+        address                 [% host.$host_id.ip %]
+}
+[% END %]
+
