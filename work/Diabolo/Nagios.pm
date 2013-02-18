@@ -9,6 +9,18 @@ use warnings;
 
 use Template;
 
+
+=pod
+
+=head2 display_vm
+
+Affiche une configuration utilisable par nagios pour l'objet Diabolo passe
+en parametre. N'affiche que les VM
+
+Diabolo::Nagios->display_vm($obj);
+
+=cut
+
 sub display_vm {
 
     my ($class, $obj) = @_;
@@ -26,6 +38,17 @@ sub display_vm {
 
 
 }
+
+=pod
+
+=head2 display_host
+
+Affiche une configuration utilisable par nagios pour l'objet Diabolo passe
+en parametre. N'affiche que les Hosts.
+
+Diabolo::Nagios->display_hosts($obj);
+
+=cut
 
 sub display_host {
 

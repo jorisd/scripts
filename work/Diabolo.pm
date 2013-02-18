@@ -1,3 +1,7 @@
+# vim: set ts=4 sw=4 tw=0:
+# vim: set expandtab:
+
+
 package Diabolo;
 
 =pod
@@ -26,7 +30,6 @@ use warnings;
 
 use Data::Dumper;
 use DBD::SQLite;
-use Template;
 our $VERSION = '0.01';
 
 =pod
@@ -46,7 +49,7 @@ Returns a new B<Diabolo> or dies on error.
 sub new {
     my ( $class, $env ) = @_;
     my $this = {};
-    bless( $this, $class );
+    bless($this, $class);
     $this->{ENV} = $env;
 
     if ( $env eq 'test' ) {
@@ -114,18 +117,21 @@ sub lsvms {
 
 =head2 resetenv
 
-Remet à zéro les données dans la base de donnnées
+Remet a zero les donnees dans la base de donnees
 
 =cut
 
 sub resetenv {
     my $self = shift;
 
-    my $sql = "delete from host_pairs; delete from vm; delete from host;";
+    my @tables = qw/ host_pairs vm host /;
 
-    my $dbh = $self->{dbh};
-    my $sth = $dbh->prepare($sql);
-    $sth->execute();
+    foreach my $t (@tables) {
+        my $sql = "delete from $t";
+        my $dbh = $self->{dbh};
+        my $sth = $dbh->prepare($sql);
+        $sth->execute();
+    }
 }
 
 =pod
@@ -143,8 +149,8 @@ sub addhost {
 
     print Dumper($params);
 
-    my $sql = "insert into host (ip, ram, disk, name, dc, active)
-             VALUES ($params->{ip}, $params->{ram}, $params->{disk}, $params->{name}, $params->{dc}, $params->{active})";
+    my $sql = "insert into host (ip, ram, disk, name, dc, active) 
+               VALUES ('$params->{ip}', $params->{ram}, $params->{disk}, '$params->{name}', $params->{dc}, $params->{active})";
 
     my $dbh = $self->{dbh};
     my $sth = $dbh->prepare($sql);
@@ -165,9 +171,9 @@ sub addvm {
     my $params = {@_};
 
     my $sql = "insert into vm (ip, ip_service, ram, disk, name, dc, active)
-             values ($params->{ip}, $params->{ip_service}, $params->{ram},
-                     $params->{disk}, $params->{name}, $params->{dc},
-                     $params->{active})";
+               values ('$params->{ip}', '$params->{ip_service}', $params->{ram},
+                       $params->{disk}, '$params->{name}', $params->{dc},
+                       $params->{active})";
 
     my $dbh = $self->{dbh};
     my $sth = $dbh->prepare($sql);
@@ -178,7 +184,7 @@ sub addvm {
 
 =head2 pairhosts
 
-Associe deux hosts ensemble pour former après un couple master/slave.
+Associe deux hosts ensemble pour former apres un couple master/slave.
 
 =cut
 
@@ -187,38 +193,44 @@ sub pairhosts {
 
     my $params = {@_};
 
-    my $sql = "insert into hosts_pair (host_id1, host_id2)
-             values ($params->{id1}, $params->{id2})";
+    my $sql = "insert into host_pairs (host_id1, host_id2)
+               values ($params->{id1}, $params->{id2})";
 
     my $dbh = $self->{dbh};
     my $sth = $dbh->prepare($sql);
     $sth->execute();
 }
 
-=pod
 
-=head2 nagios_config
-
-Affiche une configuration utilisable par nagios
-
-=cut
-
-sub nagios_config {
-    my $self = shift;
-
-    my $sql = "select * from vm where active = 1";
-
-    my $dbh = $self->{dbh};
-    my $sth = $dbh->prepare($sql);
-    $sth->execute();
-
-#my ($vm_id, $ip, $ip_service, $ram, $disk, $name, $dc, $active) = $sth->fetchrow();
-    while ( my $row = $sth->fetchrow_hashref ) {
-        for my $col ( keys %$row ) {
-            print "\t$col is $row->{$col}\n";
-        }
-    }
-}
+#sub nagios_config {
+#    my $self = shift;
+#
+#    my $sql = "select * from vm where active = 1";
+#
+#    my $dbh = $self->{dbh};
+#    my $sth = $dbh->prepare($sql);
+#    $sth->execute();
+#
+#    my $hash_ref = $sth->fetchall_hashref('vm_id');     
+#
+#    my $tt = Template->new();
+#
+#    $tt->process("nagios.tt", { vm => $hash_ref });
+#
+#
+#    print $tt; #Dumper ($hash_ref);
+#
+#
+#
+#
+#
+##my ($vm_id, $ip, $ip_service, $ram, $disk, $name, $dc, $active) = $sth->fetchrow();
+##    while ( my $row = $sth->fetchrow_hashref ) {
+##        for my $col ( keys %$row ) {
+##            print "\t$col is $row->{$col}\n";
+##        }
+##    }
+#}
 
 1;
 
