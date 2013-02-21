@@ -1,0 +1,6 @@
+{ 
+    "db_path": "/home/joris/projets/scripts/work/bin/db-test.sqlite",
+    "test": {
+        "foo": "bar"
+    }
+}

@@ -9,13 +9,14 @@ use warnings;
 
 use Template;
 
+use Cwd;
 
 =pod
 
 =head2 display_vm
 
 Affiche une configuration utilisable par nagios pour l'objet Diabolo passe
-en parametre. N'affiche que les VM
+en parametre. N'affiche que les VM active
 
 Diabolo::Nagios->display_vm($obj);
 
@@ -32,10 +33,12 @@ sub display_vm {
     $sth->execute();
 
     my $hash_ref = $sth->fetchall_hashref('vm_id');     
-    my $tt = Template->new();
+    
+    my %config = ( RELATIVE => 1, );
+    my $tt = Template->new(\%config);
 
-    $tt->process("nagios-vm.tt", { vm => $hash_ref });
 
+    $tt->process("../templates/nagios-vm.tt", { vm => $hash_ref });
 
 }
 
@@ -61,10 +64,12 @@ sub display_host {
     $sth->execute();
 
     my $hash_ref = $sth->fetchall_hashref('host_id');
-    my $tt = Template->new();
+    my %config = ( RELATIVE => 1, );
+    my $tt = Template->new(\%config);
 
-    $tt->process("nagios-host.tt", { host => $hash_ref });
+    $tt->process("../templates/nagios-host.tt", { host => $hash_ref });
 
 
 }
+
 1;

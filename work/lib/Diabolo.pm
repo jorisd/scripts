@@ -28,6 +28,7 @@ use 5.010;
 use strict;
 use warnings;
 
+use Conf;
 use Data::Dumper;
 use DBD::SQLite;
 our $VERSION = '0.01';
@@ -38,53 +39,60 @@ our $VERSION = '0.01';
 
   my $object = Diabolo->new("test");
 
-The C<new> constructor lets you create a new B<Diabolo> object.
-
-So no big surprises there...
-
-Returns a new B<Diabolo> or dies on error.
-
 =cut
 
 sub new {
     my ( $class, $env ) = @_;
-    my $this = {};
-    bless($this, $class);
-    $this->{ENV} = $env;
+    my $self = {};
+    bless($self, $class);
+    $self->{ENV} = $env;
 
-    if ( $env eq 'test' ) {
-        $this->{dbh} =
-          DBI->connect( "dbi:SQLite:dbname=db-$env.sqlite", "", "" )
-          or die $DBI::errstr;
-    }
+    my $conf = Conf::get();
 
-    return $this;
+    my $dbString = $conf->{db_path};
+
+    $self->{dbh} =
+        DBI->connect( "dbi:SQLite:dbname=$dbString", "", "" )
+        or die $DBI::errstr;
+
+#    $conf->{db_path};
+#    $conf->{test}->{foo}
+
+    return $self;
 }
 
 =pod
 
 =head2 lshosts
 
-Affiche les hosts de l'environnement dans lequel nous nous trouvons
+Retourne les hosts de l'environnement dans lequel nous nous trouvons
+
+Peut prendre un paramètre qui ne retourne que le resultat en base pour un name donné
+
+Ex. $obj->lshost("srv02dc1");
 
 =cut
 
 sub lshosts {
-    my $self = shift;
+    my ($self,$host_name) = @_;
 
-    my $sql = "select * from host";
+    my $liste_ref = [];
+    my $moresql = '';
+    if(defined($host_name)) {
+        $moresql = "where name like '$host_name'";
+    }
+
+    my $sql = "select * from host $moresql";
 
     my $dbh = $self->{dbh};
     my $sth = $dbh->prepare($sql);
     $sth->execute();
 
     while ( my $row = $sth->fetchrow_hashref ) {
-        say "Host:";
-        for my $col ( keys %$row ) {
-            say "\t$col is $row->{$col}";
-        }
+        push($liste_ref, $row);
     }
 
+    return $liste_ref;
 }
 
 =pod
@@ -98,6 +106,8 @@ Affiche les vms de l'environnement dans lequel nous nous trouvons
 sub lsvms {
     my $self = shift;
 
+    my $liste_ref = [];
+
     my $sql = "select * from vm";
 
     my $dbh = $self->{dbh};
@@ -105,12 +115,10 @@ sub lsvms {
     $sth->execute();
 
     while ( my $row = $sth->fetchrow_hashref ) {
-        say "vm:";
-        for my $col ( keys %$row ) {
-            say "\t$col is $row->{$col}";
-        }
+        push($liste_ref, $row);
     }
 
+    return $liste_ref;
 }
 
 =pod
@@ -180,6 +188,8 @@ sub addvm {
     $sth->execute();
 }
 
+
+
 =pod
 
 =head2 pairhosts
@@ -201,47 +211,5 @@ sub pairhosts {
     $sth->execute();
 }
 
-
-#sub nagios_config {
-#    my $self = shift;
-#
-#    my $sql = "select * from vm where active = 1";
-#
-#    my $dbh = $self->{dbh};
-#    my $sth = $dbh->prepare($sql);
-#    $sth->execute();
-#
-#    my $hash_ref = $sth->fetchall_hashref('vm_id');     
-#
-#    my $tt = Template->new();
-#
-#    $tt->process("nagios.tt", { vm => $hash_ref });
-#
-#
-#    print $tt; #Dumper ($hash_ref);
-#
-#
-#
-#
-#
-##my ($vm_id, $ip, $ip_service, $ram, $disk, $name, $dc, $active) = $sth->fetchrow();
-##    while ( my $row = $sth->fetchrow_hashref ) {
-##        for my $col ( keys %$row ) {
-##            print "\t$col is $row->{$col}\n";
-##        }
-##    }
-#}
-
 1;
 
-=pod
-
-=head1 SUPPORT
-
-No support is available
-
-=head1 AUTHOR
-
-Copyright 2011 Anonymous.
-
-=cut
