@@ -1,12 +1,8 @@
-# vim: set ts=4 sw=4 tw=0
-# vim: set expandtab
-
-
 package Diabolo::Vm;
 
+use Modern::Perl;
 
 sub new {
-
     my $class = shift;
     my $self = {};
 
@@ -25,56 +21,6 @@ sub new {
     return $self;
 }
 
-
-# deploy va en fait :
-# - mettre à jour les infos stockées en base
-# - déployer la nouvelle VM
-sub deploy {
-
-    my $self = shift;
-    my $diabolo = shift;
-
-    deploy_sql($self, $diabolo);
-    deploy_vm($self, $diabolo);
-
-}
-
-sub deploy_sql {
-
-    my $dbh = $diabolo->{dbh};
-
-    my $sql = "insert into vm (ip, ip_service, ram, disk, name)
-               values ('$self->{ip}', '$self->{ip_service}', $self->{ram},
-                       $self->{disk}, '$self->{name}')";
-
-    my $sth = $dbh->prepare($sql);
-    $sth->execute;
-
-    $sql = "select vm_id from vm where ip = '$self->{ip}'
-                                     AND  ip_service = '$self->{ip_service}'
-                                     AND  ram = $self->{ram}
-                                     AND  disk = $self->{disk}
-                                     AND  name = '$self->{name}' ";
-    $sth = $dbh->prepare($sql);
-    $sth->execute;
-
-    my $row = $sth->fetchrow_hashref;
-    $self->{vm_id} = $row->{vm_id};
-
-    return 0;
-
-}
-
-sub deploy_vm {
-
-    # la VM est maintenant inscrite en base, je peux donc la créer
-
-    # faire appel au module perl Sys::Virt
-    # ou bien faire un script Rex séparé ?
-
-    return 0;
-
-}
 
 sub run {
 
@@ -114,3 +60,4 @@ sub run {
 
 }
 
+1;

@@ -1,7 +1,3 @@
-# vim: set ts=4 sw=4 tw=0:
-# vim: set expandtab:
-
-
 package Diabolo;
 
 =pod
@@ -65,7 +61,7 @@ sub new {
 
 =head2 lshosts
 
-Retourne les hosts de l'environnement dans lequel nous nous trouvons
+Retourne une ref de liste qui contient les hosts de l'environnement dans lequel nous nous trouvons
 
 Peut prendre un paramètre qui ne retourne que le resultat en base pour un name donné
 
@@ -99,7 +95,14 @@ sub lshosts {
 
 =head2 lsvms
 
-Affiche les vms de l'environnement dans lequel nous nous trouvons
+Retourne une ref de liste qui contient les vm de l'environnement dans lequel nous nous
+trouvons
+
+Peut prendre un paramètre qui ne retourne que le resultat en base pour un name
+donné
+
+Ex. $obj->lsvms("vmclientX");
+
 
 =cut
 
@@ -118,7 +121,8 @@ sub lsvms {
         push($liste_ref, $row);
     }
 
-    return $liste_ref;
+    return $liste_ref;  # il faudrait peut-être renvoyer une liste 
+                        # d'objets Diabolo::Vm pour être consistent 
 }
 
 =pod
@@ -132,7 +136,7 @@ Remet a zero les donnees dans la base de donnees
 sub resetenv {
     my $self = shift;
 
-    my @tables = qw/ host_pairs vm host /;
+    my @tables = qw/ host_pairs vm host vm_host_pairs /;
 
     foreach my $t (@tables) {
         my $sql = "delete from $t";
@@ -155,37 +159,54 @@ sub addhost {
 
     my $params = {@_};
 
-    print Dumper($params);
+    #print Dumper($params);
 
-    my $sql = "insert into host (ip, ram, disk, name, dc, active) 
-               VALUES ('$params->{ip}', $params->{ram}, $params->{disk}, '$params->{name}', $params->{dc}, $params->{active})";
+    my $sql;
+
+    if(exists($params->{host_id})) {
+        $sql = "insert into host (ip, ram, disk, name, dc, active, host_id) 
+               VALUES ('$params->{ip}', $params->{ram}, $params->{disk},
+               '$params->{name}', $params->{dc}, $params->{active},
+               $params->{host_id})";
+    } else {
+        $sql = "insert into host (ip, ram, disk, name, dc, active) 
+               VALUES ('$params->{ip}', $params->{ram}, $params->{disk},
+               '$params->{name}', $params->{dc}, $params->{active})";
+
+    }
 
     my $dbh = $self->{dbh};
     my $sth = $dbh->prepare($sql);
     $sth->execute();
+
+    return 0;
 }
 
 =pod
 
 =head2 addvm
 
-Ajoute une nouvelle Vm
+Ajoute une nouvelle Vm. Prend en paramètre un obj. Diabolo::Vm
 
 =cut
 
 sub addvm {
     my $self = shift;
 
-    my $params = {@_};
+    my $vm = shift;
+
+    die("Il faut passer un obj Diabolo::Vm") if(ref($vm) ne 'Diabolo::Vm');
 
     my $sql = "insert into vm (ip, ip_service, ram, disk, name, dc, active)
-               values ('$params->{ip}', '$params->{ip_service}', $params->{ram},
-                       $params->{disk}, '$params->{name}', $params->{dc},
-                       $params->{active})";
+               values ('$vm->{ip}', '$vm->{ip_service}', $vm->{ram},
+                       $vm->{disk}, '$vm->{name}', $vm->{dc},
+                       $vm->{active})";
 
     my $dbh = $self->{dbh};
     my $sth = $dbh->prepare($sql);
     $sth->execute();
+
+    return 0;
 }
 
 
@@ -212,4 +233,64 @@ sub pairhosts {
 }
 
 1;
+
+# deploy va en fait :
+# - mettre à jour les infos stockées en base
+# - déployer la nouvelle VM
+sub deploy {
+
+    my $self = shift; # self c'est mon obj $diabolo
+    my $vm = shift;   # normalement obj Diabolo::Vm;
+
+    if(ref($vm) eq 'Diabolo::Vm') {
+
+        deploy_vm_sql($self, $vm);
+        deploy_vm_real($self, $vm);
+
+    } else {
+      die "deploy ne marche qu'avec un objet Diabolo::Vm";
+    }
+    
+    return 0;
+
+}
+
+sub deploy_vm_sql {
+
+    my ($diabolo, $vm) = @_ ;
+
+    my $dbh = $diabolo->{dbh};
+
+    my $sql = "insert into vm (ip, ip_service, ram, disk, name)
+               values ('$vm->{ip}', '$vm->{ip_service}', $vm->{ram},
+                       $vm->{disk}, '$vm->{name}')";
+
+    my $sth = $dbh->prepare($sql);
+    $sth->execute;
+
+    $sql = "select vm_id from vm where ip = '$vm->{ip}'
+                                     AND  ip_service = '$vm->{ip_service}'
+                                     AND  ram = $vm->{ram}
+                                     AND  disk = $vm->{disk}
+                                     AND  name = '$vm->{name}' ";
+    $sth = $dbh->prepare($sql);
+    $sth->execute;
+
+    my $row = $sth->fetchrow_hashref;
+    $diabolo->{vm_id} = $row->{vm_id};
+
+    return 0;
+
+}
+
+sub deploy_vm_real {
+
+    # la VM est maintenant inscrite en base, je peux donc la créer en vrai
+
+    # faire appel au module perl Sys::Virt
+    # ou bien faire un script Rex séparé ?
+    
+    return 0;
+
+}
 
