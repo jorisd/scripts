@@ -166,17 +166,19 @@ sub addhost {
     #print Dumper($params);
 
     my $sql;
+    
+    $params->{active} = 0 unless exists($params->{active});
+    die("Un identifiant de baie est requis") unless exists($params->{baie});
 
     if(exists($params->{host_id})) {
-        $sql = "insert into host (ip, ram, disk, name, dc, active, host_id) 
+        $sql = "insert into host (ip, ram, disk, name, baie, active, host_id) 
                VALUES ('$params->{ip}', $params->{ram}, $params->{disk},
-               '$params->{name}', $params->{dc}, $params->{active},
+               '$params->{name}', $params->{baie}, $params->{active},
                $params->{host_id})";
     } else {
-        $sql = "insert into host (ip, ram, disk, name, dc, active) 
+        $sql = "insert into host (ip, ram, disk, name, baie, active) 
                VALUES ('$params->{ip}', $params->{ram}, $params->{disk},
-               '$params->{name}', $params->{dc}, $params->{active})";
-
+               '$params->{name}', $params->{baie}, $params->{active})";
     }
 
     my $dbh = $self->{dbh};

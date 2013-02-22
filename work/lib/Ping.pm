@@ -6,11 +6,8 @@ use Modern::Perl;
 
 sub host {
 
-    my ($host) = @_;
-
-    #say "Pinging $host. OK";
-
-    return 0; # ping reussi
+    my ($host_ref) = @_;
+    return 0; # pour le moment ping reussi
 
 };
 
