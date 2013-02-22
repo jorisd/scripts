@@ -21,13 +21,14 @@ $obj->resetenv;
 
 
 $obj->addhost(ip => '10.0.10.1', ram => 64, disk => 500, name => 'serveurplop-01',
-                dc => 1, active => 1, host_id => 2468);
+                baie => 1, active => 1, host_id => 2468);
 
 my $host_ref1 = $obj->lshosts('serveurplop-01');
 
 my $resultat_test1 = 0;
 
-if(scalar(@{$host_ref1}) == 1) {
+
+if(@$host_ref1 == 1) {
 
     my $h_ref = $host_ref1->[0];
     #print Dumper $h_ref;
@@ -38,7 +39,7 @@ if(scalar(@{$host_ref1}) == 1) {
 ok($resultat_test1 == 1, 'Checking if serveurplop-01 is found and has expected id');
 
 $obj->addhost(ip => "10.0.10.2", ram => 32, disk => 500, name => "srv-42-dc2",
-                dc => 2, active => 0);
+               baie  => 6, active => 0);
 
 
 my $host_ref2 = $obj->lshosts;
