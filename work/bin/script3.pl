@@ -20,17 +20,12 @@ say "---- vidage des tables ----";
 $obj->resetenv;
 say "ok";
 
-say "---- ajout de HOSTs (avec id forcé) ----";
+say "---- ajout de HOSTs ----";
 $obj->addhost(ip => "10.0.10.1", ram => 64, disk => 500, name => "srv-01-dc1",
                 dc => 1, active => 1, host_id => 1);
 $obj->addhost(ip => "10.0.10.2", ram => 32, disk => 500, name => "srv-02-dc1",
                 dc => 1, active => 0, host_id => 2);
-$obj->addhost(ip => "20.0.10.1", ram => 64, disk => 500, name => "srv-01-dc2",
-                dc => 2, active => 0, host_id => 3);
-$obj->addhost(ip => "20.0.10.2", ram => 32, disk => 500, name => "srv-02-dc2",
-                dc => 2, active => 1, host_id => 4);
 
-say "---- liste des HOSTS ----";
 my $hosts_ref = $obj->lshosts;
 
 print Dumper @$hosts_ref;

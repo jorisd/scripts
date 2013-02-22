@@ -27,13 +27,17 @@ use warnings;
 use Conf;
 use Data::Dumper;
 use DBD::SQLite;
+use NetAddr::IP;
 our $VERSION = '0.01';
 
 =pod
 
 =head2 new
 
-  my $object = Diabolo->new("test");
+  my $object = Diabolo->new();
+
+  La variable d'environnement V2ENV est utilisee pour charger le bon
+  environnement de travail
 
 =cut
 
@@ -150,7 +154,7 @@ sub resetenv {
 
 =head2 addhost
 
-Ajoute un nouvel host
+Ajoute un nouvel host. 
 
 =cut
 
