@@ -1,0 +1,9 @@
+#!/bin/bash
+
+refname=$1
+old=$2
+new=$3
+
+hooks/gitbot.pl $refname $old $new
+
+exit 0

@@ -1,0 +1,10 @@
+# this is the required stanza for git 'config' file
+#
+# ircpath needs to match supervisor "ii/ii.sh" script
+[ii]
+        revformat = short
+        project = zzz
+        repo = zzz.git
+        channel = commits
+        ircpath = /tmp/server/instance
+
