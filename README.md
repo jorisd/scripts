@@ -22,3 +22,12 @@ headgrep/
 -
 
 Combine un head puis un grep.
+
+
+gitplop/
+
+C'est un bot qui notifie sur IRC lors d'un commit.
+Il s'inspire de irkerd
+
+
+
