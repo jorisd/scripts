@@ -1,10 +1,10 @@
 #!/usr/bin/perl
 
+use AnyEvent;
 use Email::MIME;
 use File::Tail;
 use Modern::Perl;
 use Spreadsheet::WriteExcel;
-use Time::HiRes;
 use utf8;
 
 binmode(STDOUT, ":utf8");
