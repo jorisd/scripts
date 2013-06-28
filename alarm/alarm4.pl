@@ -64,30 +64,28 @@ sub make_excel {
   $ws->write_string($row, 2, 'Description');
 
   # formatage / couleur des cellules
-  my $format_red = $workbook->add_format();
-  $format_red->set_bg_color('red');
-  my $format_yellow = $workbook->add_format();
-  $format_yellow->set_bg_color('yellow');
+  my %format;
+
+  foreach my $c( qw/ red yellow white / ) {
+    $format{$c} = $workbook->add_format();
+    $format{$c}->set_bg_color("$c");
+  }
+
+  my $format_ref = undef;
 
   foreach my $h_ref (@{$array_ref}) {
     $row++;
 
-    if($h_ref->{event} =~ /major/) {
-      $ws->write_string($row, 0, "$h_ref->{day}/$h_ref->{month} $h_ref->{time}:$h_ref->{sec}", $format_red);
-      $ws->write_string($row, 1, $h_ref->{event}, $format_red);
-      $ws->write_string($row, 2, $h_ref->{desc}, $format_red);
-    } elsif($h_ref->{event} =~ /minor/) {
-      $ws->write_string($row, 0, "$h_ref->{day}/$h_ref->{month} $h_ref->{time}:$h_ref->{sec}", $format_yellow);
-      $ws->write_string($row, 1, $h_ref->{event}, $format_yellow);
-      $ws->write_string($row, 2, $h_ref->{desc}, $format_yellow);
-    } else {
-      $ws->write_string($row, 0, "$h_ref->{day}/$h_ref->{month} $h_ref->{time}:$h_ref->{sec}");
-      $ws->write_string($row, 1, $h_ref->{event});
-      $ws->write_string($row, 2, $h_ref->{desc});
+    given($h_ref->{event}) {
+       when (/major/) { $format_ref = \$format{red}; }
+       when (/minor/) { $format_ref = \$format{yellow}; }
+       default        { $format_ref = \$format{white}; }
     }
-    
 
-    #$format->set_bg_color();
+    $ws->write_string($row, 0, "$h_ref->{day}/$h_ref->{month} $h_ref->{time}:$h_ref->{sec}", $$format_ref);
+    $ws->write_string($row, 1, $h_ref->{event}, $$format_ref);
+    $ws->write_string($row, 2, $h_ref->{desc}, $$format_ref);
+
   }
 
   $workbook->close();
