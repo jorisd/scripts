@@ -12,6 +12,7 @@ use AnyEvent;
 use AnyEvent::Handle;
 use Data::Dumper;
 use Email::MIME::Creator;
+use Email::Sender::Simple qw(sendmail);
 use File::Slurp;
 use File::Tail;
 use File::Temp qw/ tempfile /;
@@ -103,7 +104,7 @@ sub make_excel {
 
 };
 
-sub sendemail {
+sub envoyerMail {
 
   my $filename = shift;
 
@@ -120,10 +121,16 @@ sub sendemail {
                                 },
                                 body => read_file($filename, binmode => ':raw'),
                               );
-  my $email = Email::MIME->create( header_str => [ From => 'root@root.invalid' ],
+  my $email = Email::MIME->create( header_str => [ 
+                                        From => 'root@root.invalid',
+                                        To => 'root@localhost',
+                                        Subject => "Rapport d'alertes",
+                                   ],
                                    parts      => [ $pj ],
                                  );
   print $email->as_string;
+
+  sendmail($email);
 
   return 0;
 
@@ -132,7 +139,7 @@ sub sendemail {
 
 if (fork) {
   # run parent code
-  $pipe->writer();
+  $pipe->writer;
   $pipe->autoflush;
 
   my $file = File::Tail->new( name        => $snmplogfile,
@@ -147,7 +154,7 @@ if (fork) {
   }
 } else {
   # run child code
-  $pipe->reader();
+  $pipe->reader;
   #binmode $pipe, ':utf8';
 
   my @list = ( [] );
