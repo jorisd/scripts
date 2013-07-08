@@ -11,7 +11,8 @@ use utf8;
 use AnyEvent;
 use AnyEvent::Handle;
 use Data::Dumper;
-use Email::MIME;
+use Email::MIME::Creator;
+use File::Slurp;
 use File::Tail;
 use File::Temp qw/ tempfile /;
 use IO::Pipe;
@@ -102,6 +103,32 @@ sub make_excel {
 
 };
 
+sub sendemail {
+
+  my $filename = shift;
+
+  unless( -e $filename) {
+    warn "WARNING: $filename not found";
+    return undef;
+  }
+  
+  my $pj = Email::MIME->create( attributes => {
+                                    filename     => "alertes-snmp.xls",
+                                    content_type => "application/vnd.ms-excel",
+                                    encoding     => "quoted-printable",
+                                    name         => "alertes-snmp.xls",
+                                },
+                                body => read_file($filename, binmode => ':raw'),
+                              );
+  my $email = Email::MIME->create( header_str => [ From => 'root@root.invalid' ],
+                                   parts      => [ $pj ],
+                                 );
+  print $email->as_string;
+
+  return 0;
+
+}
+
 
 if (fork) {
   # run parent code
@@ -168,7 +195,9 @@ if (fork) {
 
 
     # TODO envoyer un mail
-    #sendemail $xls if defined $xls;
+    sendemail($xls) if defined $xls;
+
+    # unlink $xls;
 
    },
 );
