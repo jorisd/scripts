@@ -12,7 +12,7 @@ use AnyEvent;
 use AnyEvent::Handle;
 use Data::Dumper;
 use Email::MIME::Creator;
-use Email::Sender::Simple qw(sendmail);
+use Email::Sender::Simple qw/ sendmail /;
 use File::Slurp;
 use File::Tail;
 use File::Temp qw/ tempfile /;
@@ -25,27 +25,25 @@ my $snmplogfile = '/tmp/log123';
 
 my $debug = 1;
 
-
-
 # pour la communication parent/fils après le fork
 my $pipe = IO::Pipe->new;
 
 # flushe STDOUT
-$| = 1; 
-binmode(STDOUT, ":utf8");
-binmode(STDERR, ":utf8");
+$| = 1;
+binmode(STDOUT, ':utf8');
+binmode(STDERR, ':utf8');
 
 
 # make_excel - necessite en paramètre un array_ref
 #   creer un fichier excel formmaté avec les nouvelles  alertes
-#   
+#
 #   retourne le chemin complet du fichier .xls, ou undef si pas de fichier
 #
 sub make_excel {
 
   my $array_ref = shift;
 
-  my ($fh, $filename) = tempfile(SUFFIX => ".xls");
+  my ($fh, $filename) = tempfile(SUFFIX => '.xls');
 
   # Create a new Excel workbook
   my $workbook = Spreadsheet::WriteExcel->new($fh);
@@ -54,12 +52,12 @@ sub make_excel {
     author   => '<plop>',
     comments => 'Created with Perl and Spreadsheet::WriteExcel',
     company  => 'RTE',
-  ); 
-   
+  );
+
   # Add a worksheet
   my $ws = $workbook->add_worksheet();
   my $row   = 0;
-  
+
   # header commun a chaque fichier excel
   $ws->write_string($row, 0, 'Date et Heure');
   $ws->write_string($row, 1, 'Evenement');
@@ -68,7 +66,7 @@ sub make_excel {
   # formatage / couleur des cellules
   my %format;
 
-  foreach my $c( qw/ red yellow white / ) {
+  foreach my $c( qw/ red yellow purple orange white / ) {
     $format{$c} = $workbook->add_format();
     $format{$c}->set_bg_color("$c");
   }
@@ -79,15 +77,16 @@ sub make_excel {
     $row++;
 
     given($h_ref->{event}) {
-       when (/major/) { $format_ref = \$format{red}; }
-       when (/minor/) { $format_ref = \$format{yellow}; }
-       default        { $format_ref = \$format{white}; }
+       when (/major/)    { $format_ref = \$format{red};    }
+       when (/minor/)    { $format_ref = \$format{yellow}; }
+       when (/warning/)  { $format_ref = \$format{orange}; }
+       when (/critical/) { $format_ref = \$format{purple}; }
+       default           { $format_ref = \$format{white};  }
     }
 
     $ws->write_string($row, 0, "$h_ref->{day}/$h_ref->{month} $h_ref->{time}:$h_ref->{sec}", $$format_ref);
     $ws->write_string($row, 1, $h_ref->{event}, $$format_ref);
     $ws->write_string($row, 2, $h_ref->{desc}, $$format_ref);
-
   }
 
   $workbook->close();
@@ -95,14 +94,14 @@ sub make_excel {
   if($row) {
     # on a eu au moins 1 ligne snmp
     warn "INFO: Excel file $filename generated and closed" if $debug;
-    return $filename; 
+    return $filename;
   } else {
     warn "INFO: No new SNMP lines found" if $debug;
     unlink $filename;
     return undef;
-  } 
+  }
 
-};
+}
 
 sub envoyerMail {
 
@@ -112,23 +111,23 @@ sub envoyerMail {
     warn "WARNING: $filename not found";
     return undef;
   }
-  
+
   my $pj = Email::MIME->create( attributes => {
-                                    filename     => "alertes-snmp.xls",
-                                    content_type => "application/vnd.ms-excel",
-                                    encoding     => "quoted-printable",
+                                    filename     => "$filename",
+                                    content_type => 'application/vnd.ms-excel',
+                                    encoding     => 'quoted-printable',
                                     name         => "alertes-snmp.xls",
                                 },
                                 body => read_file($filename, binmode => ':raw'),
                               );
-  my $email = Email::MIME->create( header_str => [ 
+  my $email = Email::MIME->create( header_str => [
                                         From => 'root@root.invalid',
-                                        To => 'root@localhost',
+                                        To => 'postmaster@localhost',
                                         Subject => "Rapport d'alertes",
                                    ],
                                    parts      => [ $pj ],
                                  );
-  print $email->as_string;
+  print("DEBUG: Contenu du mail\n" . $email->as_string) if $debug;
 
   sendmail($email);
 
@@ -150,7 +149,7 @@ if (fork) {
   # boucle infinie
   while (my $line = $file->read) {
       print $pipe "$line";
-      warn "I just read $line and sent it to the pipe" if $debug;
+      #warn "DEBUG: I just read $line and sent it to the pipe" if $debug;
   }
 } else {
   # run child code
@@ -163,7 +162,7 @@ if (fork) {
 
   my $handle_line; $handle_line = sub {
     my ($h, $line, $eol) = @_;
-    warn "Child got a line from pipe: $line" if $debug;
+    #warn "DEBUG: Child got a line from pipe: $line" if $debug;
 
     if($line =~ m/^
                      (?<day>\d{2})\.(?<month>\d{2}),
@@ -173,44 +172,42 @@ if (fork) {
                      (?<desc>.*),{6}
                   $
                 /x
-      ) { 
-      warn "*matches*" if $debug;
+      ) {
+        #warn "DEBUG: Got a match" if $debug;
       my %copy = %+;
 
       push @{$list[0]}, \%copy;
     } else {
-      warn "WARNING: Got a weird line : $line";
-    } 
+      #warn "WARNING: Got a weird line : $line";
+      print Dumper($line);
+    }
     $h->push_read( line => $handle_line );
   };
   $h->push_read( line => $handle_line );
 
   my $once_per_minute; $once_per_minute = AnyEvent->timer (
-   after    => 5,      # first invoke in 5 seconds
-   interval => 10,     # then invoke every 10 seconds
-   cb       => sub {   # the callback to invoke
+    after    => 5,      # first invoke in 5 seconds
+    interval => 10,     # then invoke every 10 seconds
+    cb       => sub {   # the callback to invoke
 
-            
-    push @list, [];              # je push une nouvelle liste anonyme
+     push @list, [];              # je push une nouvelle liste anonyme
 
-    my $array_ref = shift @list; # puis je recupere la précédente liste anonyme qui 
-                                 # contient tous les messages logués depuis 1 minute
-                                 # @list ne contient plus qu'un seul élément
+     my $array_ref = shift @list; # puis je recupere la précédente liste anonyme qui
+                                  # contient tous les messages logués depuis 1 minute
+                                  # @list ne contient plus qu'un seul élément
+
+     my $xls = make_excel($array_ref);
+
+     if(defined $xls) {
+       envoyerMail($xls);
+       # unlink $xls;
+     }
+
+    },
+  );
 
 
-    my $xls = make_excel($array_ref);
-
-
-    # TODO envoyer un mail
-    sendemail($xls) if defined $xls;
-
-    # unlink $xls;
-
-   },
-);
-  
-  
   AnyEvent->condvar->recv;
-  
+
 }
 
