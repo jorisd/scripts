@@ -13,6 +13,7 @@ use AnyEvent::Handle;
 use Data::Dumper;
 use Email::MIME::Creator;
 use Email::Sender::Simple qw/ sendmail /;
+use Email::Sender::Transport::SMTP;
 use File::Slurp;
 use File::Tail;
 use File::Temp qw/ tempfile /;
@@ -23,7 +24,7 @@ use Spreadsheet::WriteExcel;
 # chemin du fichier a lire
 my $snmplogfile = '/tmp/log123';
 
-my $debug = 1;
+my $debug = 0;
 
 # pour la communication parent/fils après le fork
 my $pipe = IO::Pipe->new;
@@ -48,7 +49,7 @@ sub make_excel {
   # Create a new Excel workbook
   my $workbook = Spreadsheet::WriteExcel->new($fh);
   $workbook->set_properties(
-    title    => "Rapport d'alerte",
+    title    => "Rapport d'alertes SNMP",
     author   => '<plop>',
     comments => 'Created with Perl and Spreadsheet::WriteExcel',
     company  => 'RTE',
@@ -112,24 +113,40 @@ sub envoyerMail {
     return undef;
   }
 
-  my $pj = Email::MIME->create( attributes => {
-                                  filename     => "alertes-snmp.xls",
-                                  content_type => 'application/vnd.ms-excel',
+  my @parts = (
+    Email::MIME->create( attributes => {
+                                  content_type => 'text/plain',
+                                  charset      => 'ISO-8859-1',
                                   encoding     => 'quoted-printable',
+                                  format       => 'flowed',
+                         },
+                         body_str => "Rapport d'alertes SNMP",
+                       ),
+    Email::MIME->create( attributes => {
+                                  filename     => "$filename",
+                                  content_type => 'application/vnd.ms-excel',
+                                  encoding     => 'base64',
                                   name         => "$filename",
-                                },
-                                body => scalar read_file($filename, binmode => ':raw'),
-                              );
+                         },
+                         body => scalar read_file($filename, binmode => ':raw'),
+                       ),
+  );
   my $email = Email::MIME->create( header_str => [
-                                     From    => 'root@root.invalid',
-                                     To      => 'postmaster@localhost',
-                                     Subject => "Rapport d'alertes",
-                                   ],
-                                   parts => [ $pj ],
-                                 );
+                                     From    => 'xxx@xxx.invalid',
+                                     To      => 'xxx@xxx.invalid',
+                                     Cc      => 'xxx@xxx.invalid',
+                                     Subject => "Test envoi mail rapport d'alertes",
+                         ],
+                         parts => [ @parts ],
+  );
   print("DEBUG: Contenu du mail\n" . $email->as_string) if $debug;
 
-  sendmail($email);
+  my $transport = Email::Sender::Transport::SMTP->new({
+    host => 'smtp.xxx.invalid',
+    port => 25,
+  });
+
+  sendmail($email, { transport => $transport });
 
   return 0;
 
