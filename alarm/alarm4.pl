@@ -113,19 +113,19 @@ sub envoyerMail {
   }
 
   my $pj = Email::MIME->create( attributes => {
-                                    filename     => "$filename",
-                                    content_type => 'application/vnd.ms-excel',
-                                    encoding     => 'quoted-printable',
-                                    name         => "alertes-snmp.xls",
+                                  filename     => "alertes-snmp.xls",
+                                  content_type => 'application/vnd.ms-excel',
+                                  encoding     => 'quoted-printable',
+                                  name         => "$filename",
                                 },
-                                body => read_file($filename, binmode => ':raw'),
+                                body => scalar read_file($filename, binmode => ':raw'),
                               );
   my $email = Email::MIME->create( header_str => [
-                                        From => 'root@root.invalid',
-                                        To => 'postmaster@localhost',
-                                        Subject => "Rapport d'alertes",
+                                     From    => 'root@root.invalid',
+                                     To      => 'postmaster@localhost',
+                                     Subject => "Rapport d'alertes",
                                    ],
-                                   parts      => [ $pj ],
+                                   parts => [ $pj ],
                                  );
   print("DEBUG: Contenu du mail\n" . $email->as_string) if $debug;
 
@@ -149,7 +149,7 @@ if (fork) {
   # boucle infinie
   while (my $line = $file->read) {
       print $pipe "$line";
-      #warn "DEBUG: I just read $line and sent it to the pipe" if $debug;
+      warn "DEBUG: I just read $line and sent it to the pipe" if $debug;
   }
 } else {
   # run child code
@@ -162,7 +162,7 @@ if (fork) {
 
   my $handle_line; $handle_line = sub {
     my ($h, $line, $eol) = @_;
-    #warn "DEBUG: Child got a line from pipe: $line" if $debug;
+    warn "DEBUG: Child got a line from pipe: $line" if $debug;
 
     if($line =~ m/^
                      (?<day>\d{2})\.(?<month>\d{2}),
@@ -173,13 +173,12 @@ if (fork) {
                   $
                 /x
       ) {
-        #warn "DEBUG: Got a match" if $debug;
+      warn "DEBUG: Got a match" if $debug;
       my %copy = %+;
 
       push @{$list[0]}, \%copy;
     } else {
-      #warn "WARNING: Got a weird line : $line";
-      print Dumper($line);
+      warn "WARNING: Got a weird line : $line";
     }
     $h->push_read( line => $handle_line );
   };
