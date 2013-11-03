@@ -31,4 +31,8 @@ C'est un bot qui notifie sur IRC lors d'un commit.
 Il s'inspire de irkerd
 
 
+ipblacklist/
+-
+
+Blacklist entire countries with ipset
 
